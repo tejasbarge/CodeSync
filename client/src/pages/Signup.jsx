@@ -107,7 +107,7 @@ const Signup = () => {
                     <div className="flex-1 h-px bg-gray-700"></div>
                 </div>
 
-                <div className="flex justify-center w-full [&>div]:w-full [&>div>div]:w-full relative z-10">
+                <div className="flex justify-center w-full relative z-10 mt-2">
                     <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={() => { toast.error('Google Signup Failed'); }}
@@ -115,7 +115,6 @@ const Signup = () => {
                         shape="rectangular"
                         size="large"
                         text="continue_with"
-                        width="100%"
                     />
                 </div>
                 
