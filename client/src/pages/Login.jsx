@@ -9,6 +9,7 @@ const Login = () => {
         email: '',
         password: '',
     });
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -17,6 +18,7 @@ const Login = () => {
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
             const response = await api.post('/api/auth/login', formData);
             if (response.data.token) {
@@ -27,6 +29,8 @@ const Login = () => {
             }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Login failed');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -82,9 +86,10 @@ const Login = () => {
                     
                     <button
                         type="submit"
-                        className="bg-[var(--color-accent)] text-black font-bold py-3 rounded-md mt-4 hover:bg-[var(--color-accent-hover)] transition-all transform active:scale-[0.98] shadow-lg shadow-[var(--color-accent)]/10"
+                        disabled={isLoading}
+                        className={`bg-[var(--color-accent)] text-black font-bold py-3 rounded-md mt-4 hover:bg-[var(--color-accent-hover)] transition-all transform ${!isLoading && 'active:scale-[0.98]'} shadow-lg shadow-[var(--color-accent)]/10 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                        Log In
+                        {isLoading ? 'Logging in...' : 'Log In'}
                     </button>
                 </form>
 

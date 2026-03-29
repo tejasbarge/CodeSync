@@ -56,6 +56,11 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
+        // If user is registered via Google OAuth, they won't have a password set in DB
+        if (!user.password) {
+            return res.status(400).json({ message: 'This account was created using Google. Please login using Google.' });
+        }
+
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
