@@ -10,6 +10,7 @@ const Signup = () => {
         email: '',
         password: '',
     });
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -18,6 +19,7 @@ const Signup = () => {
 
     const handleSignup = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
             const response = await api.post('/api/auth/register', formData);
             if (response.status === 201) {
@@ -28,10 +30,13 @@ const Signup = () => {
             }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Registration failed');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
+        setIsLoading(true);
         try {
             const data = await googleAuth(credentialResponse.credential);
             if (data.token) {
@@ -42,6 +47,8 @@ const Signup = () => {
             }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Google Auth failed');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -95,9 +102,10 @@ const Signup = () => {
                     
                     <button
                         type="submit"
-                        className="bg-[var(--color-accent)] text-black font-bold py-3 rounded-md mt-4 hover:bg-[var(--color-accent-hover)] transition-all transform active:scale-[0.98] shadow-lg shadow-[var(--color-accent)]/10"
+                        disabled={isLoading}
+                        className={`bg-[var(--color-accent)] text-black font-bold py-3 rounded-md mt-4 hover:bg-[var(--color-accent-hover)] transition-all transform ${!isLoading ? 'active:scale-[0.98]' : ''} shadow-lg shadow-[var(--color-accent)]/10 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                     >
-                        Sign Up
+                        {isLoading ? 'Signing Up...' : 'Sign Up'}
                     </button>
                 </form>
 
@@ -107,7 +115,7 @@ const Signup = () => {
                     <div className="flex-1 h-px bg-gray-700"></div>
                 </div>
 
-                <div className="flex justify-center w-full relative z-10 mt-2">
+                <div className={`flex justify-center w-full relative z-10 mt-2 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                     <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={() => { toast.error('Google Signup Failed'); }}

@@ -1,5 +1,6 @@
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, toast } from 'react-hot-toast';
 import Home from './pages/Home';
 import EditorPage from './pages/EditorPage';
 import Login from './pages/Login';
@@ -17,6 +18,29 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+    useEffect(() => {
+        const handleOffline = () => {
+            toast.error('Connection failed! Please check your internet connection.', {
+                duration: 5000,
+                id: 'offline-toast',
+            });
+        };
+        
+        const handleOnline = () => {
+            toast.success('Internet connection restored!', {
+                id: 'online-toast',
+            });
+        };
+
+        window.addEventListener('offline', handleOffline);
+        window.addEventListener('online', handleOnline);
+
+        return () => {
+            window.removeEventListener('offline', handleOffline);
+            window.removeEventListener('online', handleOnline);
+        };
+    }, []);
+
     return (
         <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
             <div>

@@ -35,6 +35,7 @@ const Login = () => {
     };
 
     const handleGoogleSuccess = async (credentialResponse) => {
+        setIsLoading(true);
         try {
             const data = await googleAuth(credentialResponse.credential);
             if (data.token) {
@@ -45,6 +46,8 @@ const Login = () => {
             }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Google Login failed');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -99,7 +102,7 @@ const Login = () => {
                     <div className="flex-1 h-px bg-gray-700"></div>
                 </div>
 
-                <div className="flex justify-center w-full relative z-10 mt-2">
+                <div className={`flex justify-center w-full relative z-10 mt-2 ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}>
                     <GoogleLogin
                         onSuccess={handleGoogleSuccess}
                         onError={() => { toast.error('Google Login Failed'); }}
