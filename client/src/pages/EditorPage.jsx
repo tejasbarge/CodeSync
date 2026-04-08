@@ -61,15 +61,27 @@ const EditorPage = () => {
         }
 
         const init = async () => {
-            // Fetch initial room state from DB
+            // Fetch initial room state from DB — join if exists, create if not
             try {
                 const roomName = location.state?.roomName || 'Untitled Room';
-                const response = await api.get(`/api/rooms/${roomId}?name=${encodeURIComponent(roomName)}`);
-                
+                let response;
+
+                try {
+                    // Try to join existing room first
+                    response = await api.get(`/api/rooms/${roomId}`);
+                } catch (err) {
+                    if (err.response?.status === 404) {
+                        // Room doesn't exist — create it
+                        response = await api.post('/api/rooms/create', { roomId, name: roomName });
+                    } else {
+                        throw err; // rethrow unexpected errors
+                    }
+                }
+
                 if (response.data) {
                     const savedCode = response.data.code || '// Write your code here...';
                     const savedLanguage = response.data.language || 'javascript';
-                    
+
                     setCode(savedCode);
                     codeRef.current = savedCode;
                     setLanguage(savedLanguage);
@@ -77,10 +89,11 @@ const EditorPage = () => {
                     setInitialLoad(false);
                 }
             } catch (err) {
-                console.error('Failed to fetch room data:', err);
-                toast.error('Could not load previous room state');
+                console.error('Failed to fetch/create room:', err);
+                toast.error('Could not load room. Please try again.');
                 setInitialLoad(false);
             }
+
 
             socketRef.current = await initSocket();
             socketRef.current.on('connect_error', (err) => handleErrors(err));

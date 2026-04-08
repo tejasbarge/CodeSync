@@ -27,7 +27,7 @@ const Home = () => {
 
     // Debounced Room ID check
     useEffect(() => {
-        if (!roomId || roomId.length < 8) {
+        if (!roomId || roomId.length < 1) {
             setIsExistingRoom(false);
             setRoomName('');
             return;

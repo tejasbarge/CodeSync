@@ -33,31 +33,48 @@ router.get('/user', authMiddleware, async (req, res) => {
     }
 });
 
-// Get or Create a room by ID
+// Create a new room explicitly (called by the room creator)
+router.post('/create', authMiddleware, async (req, res) => {
+    try {
+        const { roomId, name } = req.body;
+
+        // Check if room already exists
+        const existing = await Room.findOne({ roomId });
+        if (existing) {
+            return res.status(409).json({ message: 'Room already exists' });
+        }
+
+        const room = new Room({
+            roomId,
+            name: name || 'Untitled Room',
+            creator: req.user.userId,
+            members: [req.user.userId],
+        });
+        await room.save();
+        res.status(201).json(room);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Get an existing room by ID (join flow — does NOT create)
 router.get('/:roomId', authMiddleware, async (req, res) => {
     try {
         const { roomId } = req.params;
-        const { name } = req.query;
-        let room = await Room.findOne({ roomId });
+        const room = await Room.findOne({ roomId });
 
         if (!room) {
-            // If room doesn't exist, create it (default state)
-            room = new Room({
-                roomId,
-                name: name || 'Untitled Room',
-                creator: req.user.userId,
-                members: [req.user.userId],
-            });
-            await room.save();
-        } else {
-            // If it exists, add user to members if not already there
-            if (!room.members.includes(req.user.userId)) {
-                room.members.push(req.user.userId);
-                await room.save();
-            }
+            return res.status(404).json({ exists: false, message: 'Room not found' });
         }
 
-        res.json(room);
+        // Add user to members if not already there
+        if (!room.members.includes(req.user.userId)) {
+            room.members.push(req.user.userId);
+            await room.save();
+        }
+
+        res.json({ exists: true, ...room.toObject() });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
