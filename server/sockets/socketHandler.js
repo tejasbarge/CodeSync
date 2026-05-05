@@ -37,6 +37,14 @@ const socketHandler = (io) => {
             socket.in(roomId).emit('LANGUAGE_CHANGE', { language });
         });
 
+        socket.on('ACQUIRE_LOCK', ({ roomId, username }) => {
+            socket.in(roomId).emit('LOCK_ACQUIRED', { username });
+        });
+
+        socket.on('RELEASE_LOCK', ({ roomId }) => {
+            socket.in(roomId).emit('LOCK_RELEASED');
+        });
+
         socket.on('SYNC_STATE', ({ socketId, code, language }) => {
             io.to(socketId).emit('SYNC_STATE', { code, language });
         });

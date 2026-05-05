@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import { useTheme } from '../context/ThemeContext';
 
-const Editor = ({ language, code, onCodeChange }) => {
+const Editor = ({ language, code, onCodeChange, lockedBy }) => {
     const { theme } = useTheme();
     const editorRef = useRef(null);
 
@@ -24,6 +24,7 @@ const Editor = ({ language, code, onCodeChange }) => {
                 autoIndent: 'full',
                 formatOnPaste: true,
                 formatOnType: true,
+                readOnly: !!lockedBy,
             }}
         />
     );

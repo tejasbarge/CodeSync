@@ -37,6 +37,9 @@ const EditorPage = () => {
     // Persistence State
     const [syncStatus, setSyncStatus] = useState('saved'); // 'saved', 'saving', 'unsaved', 'error'
     const [initialLoad, setInitialLoad] = useState(true);
+    // Locking & Debouncing State
+    const [lockedBy, setLockedBy] = useState(null);
+    const debounceTimeoutRef = React.useRef(null);
     const codeRef = React.useRef('// Write your code here...');
     const languageRef = React.useRef('javascript');
     const isChatOpenRef = React.useRef(false);
@@ -188,6 +191,15 @@ const EditorPage = () => {
                 }
             });
 
+            // Listen for locking events
+            socketRef.current.on('LOCK_ACQUIRED', ({ username }) => {
+                setLockedBy(username);
+            });
+
+            socketRef.current.on('LOCK_RELEASED', () => {
+                setLockedBy(null);
+            });
+
             // Listen for disconnected
             socketRef.current.on('DISCONNECTED', ({ socketId, username }) => {
                 toast.success(`${username} left the room.`);
@@ -207,6 +219,8 @@ const EditorPage = () => {
             socketRef.current?.off('CODE_RUNNING');
             socketRef.current?.off('LANGUAGE_CHANGE');
             socketRef.current?.off('SYNC_STATE');
+            socketRef.current?.off('LOCK_ACQUIRED');
+            socketRef.current?.off('LOCK_RELEASED');
             socketRef.current?.off('DISCONNECTED');
         };
     }, []);
@@ -266,12 +280,33 @@ const EditorPage = () => {
     const handleCodeChange = (newCode) => {
         setCode(newCode);
         codeRef.current = newCode;
-        if (socketRef.current) {
-            socketRef.current.emit('CODE_CHANGE', {
+        
+        // Locking and Debouncing Logic
+        if (!debounceTimeoutRef.current && socketRef.current) {
+            // First keystroke: acquire lock
+            socketRef.current.emit('ACQUIRE_LOCK', {
                 roomId,
-                code: newCode,
+                username: location.state?.username,
             });
         }
+        
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+        
+        debounceTimeoutRef.current = setTimeout(() => {
+            if (socketRef.current) {
+                socketRef.current.emit('CODE_CHANGE', {
+                    roomId,
+                    code: newCode,
+                });
+                // Release lock after debounced typing stops
+                socketRef.current.emit('RELEASE_LOCK', {
+                    roomId,
+                });
+            }
+            debounceTimeoutRef.current = null;
+        }, 800); // 800ms debounce
     };
 
     const handleLanguageChange = (e) => {
@@ -431,11 +466,20 @@ const EditorPage = () => {
                 <div className="flex-1 flex overflow-hidden relative">
                     {/* Editor Container */}
                     <div className="flex-1 bg-[var(--bg-main)] flex flex-col min-h-0 min-w-0 relative">
-                        <div className="flex-1 overflow-hidden">
+                        <div className="flex-1 overflow-hidden relative">
+                            {lockedBy && lockedBy !== location.state?.username && (
+                                <div className="absolute top-2 right-4 z-10 bg-red-500/90 text-white px-3 py-1 rounded text-xs font-bold shadow-lg flex items-center gap-2 animate-pulse">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                    </svg>
+                                    Locked by {lockedBy}
+                                </div>
+                            )}
                             <Editor 
                                 language={language} 
                                 code={code} 
                                 onCodeChange={handleCodeChange} 
+                                lockedBy={lockedBy}
                             />
                         </div>
                         
